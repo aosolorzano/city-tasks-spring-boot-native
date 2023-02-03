@@ -1,0 +1,78 @@
+version: '3.9'
+
+networks:
+  tasks-network:
+    driver: bridge
+
+services:
+  tasks-postgres:
+    image: postgres:14.4
+    container_name: tasks-postgres
+    environment:
+      - POSTGRES_DB=HiperiumCityTasksDB
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres123
+    ports:
+      - "5432:5432"
+    networks:
+      - tasks-network
+
+  tasks-pgadmin:
+    image: dpage/pgadmin4
+    container_name: tasks-pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@aosolorzano.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    volumes:
+      - ./utils/docker-volume/pgadmin:/var/lib/pgadmin
+    ports:
+      - "9000:80"
+    depends_on:
+      - tasks-postgres
+    networks:
+      - tasks-network
+
+  tasks-localstack:
+    image: localstack/localstack:latest
+    container_name: tasks-localstack
+    environment:
+      - DEBUG=0
+      - SERVICES=dynamodb
+      - EAGER_SERVICE_LOADING=1
+      - DYNAMODB_SHARE_DB=1
+      - DYNAMODB_CORS=*
+      - AWS_DEFAULT_REGION=ap-southeast-2
+      - AWS_ACCESS_KEY_ID=DUMMY
+      - AWS_SECRET_ACCESS_KEY=DUMMY
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    ports:
+      - "4566:4566"
+    volumes:
+      - ./utils/docker-volume/localstack:/var/lib/localstack"
+      - ./utils/docker-volume/dynamodb/items/devices.json:/var/lib/localstack/devices.json
+      - ./utils/docker-volume/dynamodb/scripts/create-resources.sh:/etc/localstack/init/ready.d/create-resources.sh
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - tasks-network
+
+  tasks-api:
+    image: aosolorzano/city-tasks-spring-boot-tdd:1.1.0-arm64
+    container_name: tasks-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - HIPERIUM_CITY_TASKS_TIME_ZONE_ID=-05:00
+      - HIPERIUM_CITY_TASKS_DB_CLUSTER_SECRET={"dbClusterIdentifier":"hiperium-city-tasks-db-cluster","password":"postgres123","dbname":"HiperiumCityTasksDB","engine":"postgres","port":5432,"host":"tasks-postgres","username":"postgres"}
+      - AWS_DEFAULT_REGION=ap-southeast-2
+      - AWS_ACCESS_KEY_ID=DUMMY
+      - AWS_SECRET_ACCESS_KEY=DUMMY
+      - AWS_DYNAMODB_ENDPOINT-OVERRIDE=http://tasks-localstack:4566
+    depends_on:
+      - tasks-postgres
+      - tasks-localstack
+    ports:
+      - "8080:8080"
+    networks:
+      - tasks-network

@@ -1,0 +1,6 @@
+{
+  "id": {"S": "123"},
+  "name": {"S": "Device name"},
+  "description": {"S": "Device description"},
+  "status": {"S": "OFF"}
+}
