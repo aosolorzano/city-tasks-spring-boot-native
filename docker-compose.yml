@@ -40,7 +40,6 @@ services:
       - SERVICES=dynamodb
       - EAGER_SERVICE_LOADING=1
       - DYNAMODB_SHARE_DB=1
-      - DYNAMODB_CORS=*
       - AWS_DEFAULT_REGION=ap-southeast-2
       - AWS_ACCESS_KEY_ID=DUMMY
       - AWS_SECRET_ACCESS_KEY=DUMMY
@@ -56,8 +55,8 @@ services:
       - tasks-network
 
   tasks-api:
-    image: aosolorzano/city-tasks-spring-boot-tdd:1.1.0-arm64
-    container_name: tasks-api
+    image: aosolorzano/city-tasks-spring-native:1.2.0
+    container_name: city-tasks-spring-native
     build:
       context: .
       dockerfile: Dockerfile
@@ -68,9 +67,10 @@ services:
       - AWS_DEFAULT_REGION=ap-southeast-2
       - AWS_ACCESS_KEY_ID=DUMMY
       - AWS_SECRET_ACCESS_KEY=DUMMY
-      - AWS_DYNAMODB_ENDPOINT-OVERRIDE=http://tasks-localstack:4566
+      - AWS_ENDPOINT_OVERRIDE=http://tasks-localstack:4566
     depends_on:
       - tasks-postgres
+      - tasks-pgadmin
       - tasks-localstack
     ports:
       - "8080:8080"

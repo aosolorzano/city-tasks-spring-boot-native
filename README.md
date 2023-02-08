@@ -16,8 +16,15 @@ Also, the project uses Spring Native to compile the application into a native ex
 This project has been configured to let you generate either a lightweight container or a native executable.
 It is also possible to run your tests in a native image.
 
+*NOTE:* GraalVM 22.3+ is required.
+
 ### Running the application using Docker Compose
-Execute the following command from the root of the project:
+First, generate the Spring Native image:
+```bash
+./mvnw clean -Pnative native:compile
+```
+
+Then, execute the following command from the root of the project:
 ```bash
 docker compose up --build
 ```
@@ -30,29 +37,34 @@ aws dynamodb scan         \
   --endpoint-url http://localhost:4566
 ```
 
-### Executable with Native Build Tools
+## Using the Executable only
 Use this option if you want to explore more options such as running your tests in a native image.
-The GraalVM `native-image` compiler should be installed and configured on your machine.
+*IMPORTANT:* The GraalVM `native-image` compiler should be installed and configured on your machine.
 
-NOTE: GraalVM 22.3+ is required.
-
-To create the executable, run the following goal:
-
-```
-$ ./mvnw native:compile -Pnative
+Deploy the required services using Docker Compose command:
+```bash
+docker compose up tasks-postgres tasks-localstack
 ```
 
-Then, you can run the app as follows:
+Open a new terminal window and export the following environment variables:
+```bash
+export HIPERIUM_CITY_TASKS_DB_CLUSTER_SECRET='{"dbClusterIdentifier":"hiperium-city-tasks-db-cluster","password":"postgres123","dbname":"HiperiumCityTasksDB","engine":"postgres","port":5432,"host":"localhost","username":"postgres"}'
+export AWS_DEFAULT_REGION=ap-southeast-2
+export AWS_ACCESS_KEY_ID=DUMMY
+export AWS_SECRET_ACCESS_KEY=DUMMY
+export AWS_ENDPOINT_OVERRIDE=http://localhost:4566
 ```
-$ target/city-tasks-api
+
+Then, create and run the native executable from the project's root directory:
+```bash
+$ ./mvnw clean native:compile -Pnative spring-boot:run
 ```
 
 You can also run your existing tests suite in a native image.
 This is an efficient way to validate the compatibility of your application.
 
 To run your existing tests in a native image, run the following goal:
-
-```
+```bash
 $ ./mvnw test -PnativeTest
 ```
 

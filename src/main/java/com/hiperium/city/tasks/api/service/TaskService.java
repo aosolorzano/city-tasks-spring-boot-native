@@ -28,11 +28,11 @@ public class TaskService {
     @Value("${hiperium.city.tasks.time.zone.id}")
     private String zoneId;
 
-    private final Scheduler scheduler;
+    private final Scheduler quartzScheduler;
     private final TaskRepository taskRepository;
 
-    public TaskService(Scheduler scheduler, TaskRepository taskRepository) {
-        this.scheduler = scheduler;
+    public TaskService(Scheduler quartzScheduler, TaskRepository taskRepository) {
+        this.quartzScheduler = quartzScheduler;
         this.taskRepository = taskRepository;
     }
 
@@ -96,7 +96,7 @@ public class TaskService {
         JobDetail job = JobsUtil.createJobDetailFromTask(task);
         Trigger trigger = JobsUtil.createCronTriggerFromTask(task, this.zoneId);
         try {
-            this.scheduler.scheduleJob(job, trigger);
+            this.quartzScheduler.scheduleJob(job, trigger);
         } catch (SchedulerException e) {
             throw new TaskScheduleException(e.getMessage());
         }
@@ -111,12 +111,12 @@ public class TaskService {
         }
         Trigger trigger = null;
         try {
-            for (JobKey jobKey : this.scheduler.getJobKeys(GroupMatcher.jobGroupEquals(JobsUtil.TASK_GROUP_NAME))) {
+            for (JobKey jobKey : this.quartzScheduler.getJobKeys(GroupMatcher.jobGroupEquals(JobsUtil.TASK_GROUP_NAME))) {
                 LOGGER.debug("Existing JobKey found: {}", jobKey);
                 if (jobKey.getName().equals(task.getJobId())) {
                     TriggerKey triggerKey = TriggerKey.triggerKey(task.getJobId(), JobsUtil.TASK_GROUP_NAME);
                     LOGGER.debug("Existing TriggerKey found: {}", triggerKey);
-                    trigger = this.scheduler.getTrigger(triggerKey);
+                    trigger = this.quartzScheduler.getTrigger(triggerKey);
                 }
             }
         } catch (SchedulerException e) {
@@ -131,7 +131,7 @@ public class TaskService {
         Trigger newTrigger = JobsUtil.createCronTriggerFromTask(task, this.zoneId);
         Date newTriggerFirstFire;
         try {
-            newTriggerFirstFire = this.scheduler.rescheduleJob(actualTrigger.getKey(), newTrigger);
+            newTriggerFirstFire = this.quartzScheduler.rescheduleJob(actualTrigger.getKey(), newTrigger);
             if (Objects.isNull(newTriggerFirstFire)) {
                 throw new TaskScheduleException("Cannot reschedule the Trigger for the Task ID: " + task.getId());
             } else {
@@ -146,7 +146,7 @@ public class TaskService {
 
     private Mono<Void> unscheduleJob(Long id, Trigger currentTrigger) {
         try {
-            boolean unscheduledJob = this.scheduler.unscheduleJob(currentTrigger.getKey());
+            boolean unscheduledJob = this.quartzScheduler.unscheduleJob(currentTrigger.getKey());
             if (unscheduledJob) {
                 LOGGER.debug("Job unscheduled for Task: {}", id);
             }

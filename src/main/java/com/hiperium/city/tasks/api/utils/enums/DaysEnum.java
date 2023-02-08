@@ -1,5 +1,7 @@
 package com.hiperium.city.tasks.api.utils.enums;
 
+import java.util.Arrays;
+
 public enum DaysEnum {
     MON,
     TUE,
@@ -10,13 +12,9 @@ public enum DaysEnum {
     SUN;
 
     public static DaysEnum getEnumFromString(String dayOfWeek) {
-        DaysEnum result = null;
-        for (DaysEnum daysEnum : DaysEnum.values()) {
-            if (daysEnum.name().equals(dayOfWeek)) {
-                result = daysEnum;
-                break;
-            }
-        }
-        return result;
+        return Arrays.stream(DaysEnum.values())
+                .filter(daysEnum -> daysEnum.name().equals(dayOfWeek))
+                .findFirst()
+                .orElse(null);
     }
 }

@@ -25,16 +25,23 @@ public abstract class AbstractContainerBase {
     }
 
     @DynamicPropertySource
-    public static void dynamicPropertySource(DynamicPropertyRegistry registry){
+    public static void dynamicPropertySource(DynamicPropertyRegistry registry) {
         Startables.deepStart(POSTGRES_CONTAINER, LOCAL_STACK_CONTAINER).join();
         // SPRING DATA JDBC
         registry.add("spring.datasource.url", POSTGRES_CONTAINER::getJdbcUrl);
         registry.add("spring.datasource.username", POSTGRES_CONTAINER::getUsername);
         registry.add("spring.datasource.password", POSTGRES_CONTAINER::getPassword);
+        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+        // SPRING QUARTZ JDBC
+        registry.add("spring.quartz.properties.org.quartz.dataSource.CityTasksQuartzDS.URL", POSTGRES_CONTAINER::getJdbcUrl);
+        registry.add("spring.quartz.properties.org.quartz.dataSource.CityTasksQuartzDS.user", POSTGRES_CONTAINER::getUsername);
+        registry.add("spring.quartz.properties.org.quartz.dataSource.CityTasksQuartzDS.password", POSTGRES_CONTAINER::getPassword);
+        registry.add("spring.quartz.properties.org.quartz.dataSource.CityTasksQuartzDS.driver", () -> "org.postgresql.Driver");
+        registry.add("spring.quartz.properties.org.quartz.dataSource.CityTasksQuartzDS.provider", () -> "hikaricp");
         // AWS DYNAMODB
         registry.add("aws.region", LOCAL_STACK_CONTAINER::getRegion);
-        registry.add("aws.dynamodb.endpoint-override", () -> LOCAL_STACK_CONTAINER.getEndpointOverride(LocalStackContainer.Service.DYNAMODB).toString());
-        registry.add("aws.access-key-id", LOCAL_STACK_CONTAINER::getAccessKey);
-        registry.add("aws.secret-access-key", LOCAL_STACK_CONTAINER::getSecretKey);
+        registry.add("aws.accessKeyId", LOCAL_STACK_CONTAINER::getAccessKey);
+        registry.add("aws.secretAccessKey", LOCAL_STACK_CONTAINER::getSecretKey);
+        registry.add("aws.endpoint-override", () -> LOCAL_STACK_CONTAINER.getEndpointOverride(LocalStackContainer.Service.DYNAMODB).toString());
     }
 }

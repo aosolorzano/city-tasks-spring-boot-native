@@ -1,7 +1,6 @@
 package com.hiperium.city.tasks.api.job;
 
-import com.hiperium.city.tasks.api.model.Device;
-import com.hiperium.city.tasks.api.model.Task;
+import com.hiperium.city.tasks.api.exception.TaskScheduleException;
 import com.hiperium.city.tasks.api.repository.DeviceRepository;
 import com.hiperium.city.tasks.api.repository.TaskRepository;
 import com.hiperium.city.tasks.api.utils.JobsUtil;
@@ -31,23 +30,17 @@ public class TaskJob implements Job {
         final String jobId = context.getJobDetail().getJobDataMap().getString(JobsUtil.TASK_JOB_ID_DATA_KEY);
         Mono.just(jobId)
                 .map(this.taskRepository::findByJobId)
-                .map(task -> this.deviceRepository.findById(task.getDeviceId())
-                            .map(device -> this.changeDeviceStatus(device, task))
-                            .flatMap(this.deviceRepository::update)
-                )
+                .flatMap(this.deviceRepository::updateStatusByTask)
+                .map(this::validateDeviceUpdate)
                 .subscribe(
-                        result -> LOGGER.debug("execute() - Task Job executed successfully: {}", jobId),
+                        result -> LOGGER.debug("execute() - Job executed successfully: {}", jobId),
                         error -> LOGGER.error("execute() - Error: {}", error.getMessage())
                 );
     }
 
-    private Device changeDeviceStatus(Device device, Task task) {
-        if ("ACTIVATE".equals(task.getDeviceAction())) {
-            device.setStatus("ON");
-        } else {
-            device.setStatus("OFF");
-        }
-        return device;
+    private Mono<Void> validateDeviceUpdate(boolean result) {
+        if (result) return Mono.empty();
+        else return Mono.error(new TaskScheduleException("Device Status was not updated."));
     }
 }
 

@@ -22,8 +22,7 @@ public final class EnvironmentUtil {
             LOGGER.warn("HIPERIUM_CITY_TASKS_DB_CLUSTER_SECRET not found. Using defaults.");
             return null;
         }
-        ObjectMapper mapper = new ObjectMapper();
-        return mapper.readValue(auroraSecret, AuroraPostgresSecretVO.class);
+        return new ObjectMapper().readValue(auroraSecret, AuroraPostgresSecretVO.class);
     }
 
     public static String getTimeZoneId() {
@@ -35,15 +34,6 @@ public final class EnvironmentUtil {
         return timeZoneId;
     }
 
-    public static String getAwsEndpointOverride() {
-        String endpointOverride = System.getenv("AWS_DYNAMODB_ENDPOINT-OVERRIDE");
-        if (Objects.isNull(endpointOverride) || endpointOverride.isBlank()) {
-            LOGGER.warn("AWS_DYNAMODB_ENDPOINT-OVERRIDE not found. Using defaults.");
-            return null;
-        }
-        return endpointOverride;
-    }
-
     public static String getAwsRegion() {
         String awsRegion = System.getenv("AWS_DEFAULT_REGION");
         if (Objects.isNull(awsRegion) || awsRegion.isBlank()) {
@@ -51,5 +41,32 @@ public final class EnvironmentUtil {
             return null;
         }
         return awsRegion;
+    }
+
+    public static String getAwsAccessKey() {
+        String awsAccessKey = System.getenv("AWS_ACCESS_KEY_ID");
+        if (Objects.isNull(awsAccessKey) || awsAccessKey.isBlank()) {
+            LOGGER.warn("AWS_ACCESS_KEY_ID not found. Using defaults.");
+            return null;
+        }
+        return awsAccessKey;
+    }
+
+    public static String getAwsSecretKey() {
+        String awsSecretKey = System.getenv("AWS_SECRET_ACCESS_KEY");
+        if (Objects.isNull(awsSecretKey) || awsSecretKey.isBlank()) {
+            LOGGER.warn("AWS_SECRET_ACCESS_KEY not found. Using defaults.");
+            return null;
+        }
+        return awsSecretKey;
+    }
+
+    public static String getAwsEndpointOverride() {
+        String endpointOverride = System.getenv("AWS_ENDPOINT_OVERRIDE");
+        if (Objects.isNull(endpointOverride) || endpointOverride.isBlank()) {
+            LOGGER.warn("AWS_ENDPOINT_OVERRIDE not found. Using defaults.");
+            return null;
+        }
+        return endpointOverride;
     }
 }

@@ -1,22 +1,23 @@
 #####################################################################################
 ########################## Stage 1: Docker Builder Image ############################
 #####################################################################################
-FROM amazoncorretto:17.0.6-al2022-RC as build
+FROM ghcr.io/graalvm/graalvm-ce:22.3.1 AS builder
+COPY mvnw     /workspace/app/mvnw
+COPY .mvn     /workspace/app/.mvn
+COPY pom.xml  /workspace/app/pom.xml
+
 WORKDIR /workspace/app
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
-COPY src src
-RUN ./mvnw clean package -DskipTests
-RUN mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
+RUN gu install native-image && \
+    ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.1.2:go-offline
+
+COPY src /workspace/app/src
+RUN ./mvnw clean -Pnative native:compile -DskipTests
 
 #####################################################################################
-######################## Stage 2: Docker Application Image ##########################
+#################### Stage 2: Docker Native Application Image #######################
 #####################################################################################
-FROM amazoncorretto:17.0.6-al2022-RC-headless
-VOLUME /tmp
-ARG DEPENDENCY=/workspace/app/target/dependency
-COPY --from=build ${DEPENDENCY}/BOOT-INF/classes /app
-COPY --from=build ${DEPENDENCY}/BOOT-INF/lib     /app/lib
-COPY --from=build ${DEPENDENCY}/META-INF         /app/META-INF
-ENTRYPOINT ["java", "-cp", "app:app/lib/*", "com.hiperium.city.tasks.api.TasksApplication"]
+FROM oraclelinux:9-slim
+COPY --from=builder /workspace/app/target/city-tasks-spring-native application
+
+EXPOSE 8080
+CMD ["sh", "-c", "./application"]
